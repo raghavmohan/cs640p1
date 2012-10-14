@@ -1,0 +1,51 @@
+Project 1 Demo Form:
+
+Genral Info
+****************************
+Group member <first and last name, CS login>
+
+1)------------
+
+2)------------
+
+3)------------
+
+Tests
+*****************************
+The below tests should be done at one of the machines in the mumble lab (CS 1350) using the version of the code that you submitted to the handin directory (or the closest to the version that you submitted).
+
+Machine name tests were run on:------------
+
+Substitute x in the tracker file with the machine number that you are running on (01,02,...).
+
+Test preparation:
+
+- Create 3 folders called sender1, sender2, and requester.
+
+- Copy hello.txt, split1.txt, and your sender executable to sender1. Rename split1.txt in this folder to split.txt.
+
+- Copy split2.txt and your sender executable to sender2. Rename split2.txt in this folder to split.txt.
+
+- Copy your requester executable and tracker.txt to the requester.
+
+Run the commands on the 2 tests below and answer the corresponding questions. Yes/No answers are sufficient.
+
+Test 1:
+
+./sender -p 5000 -g 5001 -r 1 -q 100 -l 100 (run from sender1 folder)
+
+./requester -p 5001 -o hello.txt (run from requester folder)
+
+1) Does your sender send at a rate of 1 per second?
+
+2) Are the original hello.txt and the one that the requester constructs the same?
+
+Test 2:
+
+./sender -p 5000 -g 5001 -r 1 -q 100 -l 100 (run from sender1 folder)
+
+./sender -p 5002 -g 5001 -r 1 -q 100 -l 100 (run from sender2 folder)
+
+./requester -p 5001 -o split.txt (run from requester folder)
+
+1) Does the original split.txt (concatenation of split1.txt and split2.txt) match the split.txt that the requester has consructed?
