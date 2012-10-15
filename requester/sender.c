@@ -65,6 +65,8 @@ int main (int argc, char ** argv){
 		printf("sequenceNum: %d\n", senderPort);
 		printf("length: %d\n", senderPort);
 	}
+init();
+
 int sd = UDP_Open(10000);
 	assert(sd > -1);
 	while (1) {

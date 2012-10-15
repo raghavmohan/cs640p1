@@ -1,63 +1,11 @@
-#include <stdlib.h>
-#include <string.h>
 #include "udp.h"
-
-#define BUFFER_SIZE 4096
-#define DEBUG 1
-
-
-void getoptions (int argc, char **argv);
-
-//define globals
-int senderPort;
-int requesterPort;
-//maybe int?
-int rate;
-uint length, sequenceNum;
-
-void usage(int terminate){
-
-	printf("Usage sender -p <port> -g <requester port> -r <rate> -q <seq_no> -l <length>\n");
-	if(terminate)
-		exit(0);
-}
-
-
-void getoptions (int argc, char **argv) {
-	int c;
-	while ((c = getopt (argc, argv, "v?hRs:P:p:G:g:R:r:Q:q:L:l:")) != -1){
-		switch (c) {
-			case 'h':
-				usage(1);
-			case 'p':
-				senderPort =atoi(optarg);
-				break;
-			case 'g':
-				requesterPort = atoi(optarg);
-				break;
-			case 'r':
-				rate = atoi(optarg);
-				break;
-			case 'q':
-				//sequenceNum = (uint) atoi(optarg, NULL, 0);
-				sequenceNum = (uint) atoi(optarg);
-				break;
-			case 'l':
-				//length = (uint) atoi(optarg, NULL, 0);
-				length =  atoi(optarg);
-				break;
-			default:
-				break;
-		}
-	}
-} 
-
+#include "sender.h"
 
 int main (int argc, char ** argv){
 	getoptions(argc, argv);
 	if(argc != 11)
 		usage(1);
-	
+
 	if(DEBUG){
 		printf("senderPort: %d\n", senderPort);
 		printf("requesterPort: %d\n", requesterPort);
@@ -65,28 +13,78 @@ int main (int argc, char ** argv){
 		printf("sequenceNum: %d\n", senderPort);
 		printf("length: %d\n", senderPort);
 	}
-int sd = UDP_Open(10000);
+
+//	int sd = init(getHost());
+	int sd = UDP_Open(senderPort);
 	assert(sd > -1);
+
+	printf("waiting in loop\n");
 	while (1) {
-		struct sockaddr_in s;
-		char buffer[BUFFER_SIZE];
-		int rc = UDP_Read(sd, &s, buffer, BUFFER_SIZE);
+		//use this to get the socket address
+		//struct sockaddr_in y;
+		//saddr= y;
+		char buffer[4096];
+		int rc = UDP_Read(sd, &saddr, buffer, 4096);
+
+		
+			printf("buffer: %s\n", buffer);
+		//wait for a request header
 		if (rc > 0) {
-			char reply[BUFFER_SIZE];
-			sprintf(reply, "reply");
-			rc = UDP_Write(sd, &s, reply, BUFFER_SIZE);
+			printf("buffer: %s\n", buffer);
+
+			//handleMessage (buffer);
+			//need a message struct casted as a char []
+			rc =  UDP_Write(sd, &saddr, buffer, sizeof(packet));
 		}
 	}
 
 
 
+	
+
+
+
+	char* inFile = "./split.txt";
+
+
+	int fd = open(inFile, O_RDONLY);
+	if (fd < 0) {
+		fprintf(stderr, "Error: Cannot open file %s\n", inFile);   
+		exit(1);
+	}
+	struct stat file_status;
+	if(stat(inFile, &file_status) != 0){
+		fprintf(stderr, "Error: Cannot stat file %s\n", inFile);
+		exit(1);
+	}
+	int fileSize = (int) file_status.st_size;
+
+	int numPackets = (int)ceil( (double)fileSize/ (double)length);
+	packet * packets = malloc ( numPackets * sizeof(packet));
+
+	if(DEBUG){
+		printf("numPackets: %d\n", numPackets);
+		printf("filesize: %d\n", fileSize);
+	}
+
+	int counter =0;
+	char r ='\0';
+	//int rc = UDP_Read(sd, &
+	while (1) {	
+		int rc;
+		rc = read(fd, &r, 1);
+		if (rc == 0) // 0 indicates EOF
+			break;
+		if (rc < 0) {
+			perror("read");
+			exit(1);
+		}
+		printf("%c", r);
+		counter++;
+	}
+
 
 
 
 	return 0;
-
-
-
-
-
 }
