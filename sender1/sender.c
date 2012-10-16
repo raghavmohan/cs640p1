@@ -14,33 +14,36 @@ int main (int argc, char ** argv){
 		printf("length: %d\n", senderPort);
 	}
 
-//	int sd = init(getHost());
+	//	int sd = init(getHost());
 	int sd = UDP_Open(senderPort);
 	assert(sd > -1);
 
 	printf("waiting in loop\n");
 	while (1) {
 		//use this to get the socket address
-		//struct sockaddr_in y;
-		//saddr= y;
-		char buffer[4096];
-		int rc = UDP_Read(sd, &saddr, buffer, 4096);
+		struct sockaddr_in y;
+		saddr= y;
+		char buffer[12];
+		int rc = UDP_Read(sd, &saddr, buffer, 5);
 
-		
-			printf("buffer: %s\n", buffer);
+
 		//wait for a request header
 		if (rc > 0) {
-		//	printf("buffer: %s\n", buffer);
+				char buffer1[1024];
+				sprintf(buffer1, "raghavmohan");
 
+				rc =  UDP_Write(sd, &saddr, buffer1, 1024);
+				printf("rc is %d\n", rc);
+				printf("buffer: %s\nand a happy new year", buffer);
+				printf("this is not working:%s",buffer1);
 			//handleMessage (buffer);
 			//need a message struct casted as a char []
-			rc =  UDP_Write(sd, &saddr, buffer, sizeof(packet));
 		}
 	}
 
 
 
-	
+
 
 
 

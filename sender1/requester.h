@@ -37,7 +37,7 @@ typedef struct msg_t{
 int port;
 char* fileOpt;
 static struct sockaddr_in saddr;
-int sd;
+//int sd;
 void getoptions (int argc, char **argv) {
 	int c;
 	while ((c = getopt (argc, argv, "v?hRs:O:o:P:p:")) != -1){
