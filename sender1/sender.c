@@ -30,7 +30,7 @@ int main (int argc, char ** argv){
 			printf("buffer: %s\n", buffer);
 		//wait for a request header
 		if (rc > 0) {
-			printf("buffer: %s\n", buffer);
+		//	printf("buffer: %s\n", buffer);
 
 			//handleMessage (buffer);
 			//need a message struct casted as a char []

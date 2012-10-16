@@ -7,3 +7,11 @@
 #include <time.h>
 
 #include <unistd.h>
+
+#define MAXLINESIZE 256
+void errorExit(char * errorMessage){
+	fprintf(stderr, "Error: %s\n", errorMessage);
+	exit(1);
+}
+
+

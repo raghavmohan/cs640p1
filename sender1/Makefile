@@ -3,7 +3,7 @@
 
 CXX =           gcc
 PURXX = 	purify
-CXXFLAGS =      -O2 -g -lm
+CXXFLAGS =      -O0 -g -lm
 
 all: requester sender
 

@@ -27,11 +27,6 @@ void usage(int terminate){
 		exit(0);
 }
 
-void errorExit(char * errorMessage){
-	fprintf(stderr, "Error: %s\n", errorMessage);
-	exit(1);
-}
-
 void getoptions (int argc, char **argv) {
 	int c;
 	while ((c = getopt (argc, argv, "v?hRs:P:p:G:g:R:r:Q:q:L:l:")) != -1){
