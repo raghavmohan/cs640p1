@@ -77,3 +77,27 @@ int numLines(char *filename)
 
 	return lines;
 }
+void printTrack(tracker tracktop){
+	printf("track.file: %s\ntrack.id: %d\ntrack.mac: %s\ntrack.port: %d\n",tracktop.file, tracktop.id, tracktop.mac, tracktop.port); 
+}
+int getNumChunks(tracker * tracks, char * fileOpt, int trackLen){
+	int i, numChunks;
+	numChunks=0;
+	for(i=0; i < trackLen; ++i){
+		if(strcmp(tracks[i].file, fileOpt) == 0)
+			++numChunks;
+	}
+	return numChunks;
+}
+
+char * getIDHost(tracker * tracks, char * fileOpt,int id, int trackLen){
+	int i = 0;
+	for(i; i < trackLen; ++i){
+		if((strcmp(tracks[i].file, fileOpt) == 0) && (tracks[i].id == id))
+			return tracks[i].mac;
+	}
+	return '\0';
+}
+
+
+
