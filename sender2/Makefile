@@ -1,10 +1,9 @@
 # Makefile
 # Requires that the object definitions be in wl.h and wl.cpp
 
-#CXX =           g++
 CXX =           gcc
-PURXX = purify
-CXXFLAGS =      -O2 -g
+PURXX = 	purify
+CXXFLAGS =      -O0 -g -lm
 
 all: requester sender
 

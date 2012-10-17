@@ -1,2 +1,2 @@
 *This is split1.txt.
-*
+*This is split2.txt.

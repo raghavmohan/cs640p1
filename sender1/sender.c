@@ -1,6 +1,6 @@
 #include "udp.h"
 #include "sender.h"
-
+#define SEC_MILLSEC 1000000
 int main (int argc, char ** argv){
 	int i;
 	getoptions(argc, argv);
@@ -28,9 +28,6 @@ int main (int argc, char ** argv){
 		saddr= y;
 		rc = UDP_Read(sd, &saddr, (char *)&message,sizeof(message) );
 
-
-		//	printMessage(&message);
-
 	}
 	int numPackets=0;
 	msg * packetsToSend = processMessage(&message, &numPackets);
@@ -40,17 +37,21 @@ int main (int argc, char ** argv){
 		printf("numPackets: %d\n", numPackets);
 	}
 	for (i= 0; i < numPackets; ++i){
+		
+	printIP(&saddr);
 		rc =  UDP_Write(sd, &saddr,(char*) &(packetsToSend[i]), sizeof(message));
-		sleep(1);
+		
+	struct timeval endTotal;
+		gettimeofday(&endTotal, NULL);
+		time_t curtime;
+		curtime=endTotal.tv_sec;
+		char timeBuf[32];
+		strftime(timeBuf,30,"%m-%d-%Y  %T.",localtime(&curtime));
+	printf("Time sent:%s\n", timeBuf);
+	
+//usleep( (1000/rate) );
+		usleep( (SEC_MILLSEC/rate) );
 	}
-	/*
-	   message.type='D';
-	   message.sequence=sequenceNum;
-	   message.length=length;
-	   memcpy(message.payload, "testing sender to requester", strlen("testing sender to requester"));
-	   rc =  UDP_Write(sd, &saddr,(char*) &message, sizeof(message));
-	   printf("rc is %d\n", rc);
-	   exit(0);
-	   */
-	return 0;
+	
+return 0;
 }
