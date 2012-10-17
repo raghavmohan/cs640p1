@@ -2,6 +2,7 @@
 #include "sender.h"
 
 int main (int argc, char ** argv){
+	int i;
 	getoptions(argc, argv);
 	if(argc != 11)
 		usage(1);
@@ -10,8 +11,8 @@ int main (int argc, char ** argv){
 		printf("senderPort: %d\n", senderPort);
 		printf("requesterPort: %d\n", requesterPort);
 		printf("rate: %d\n", rate);
-		printf("sequenceNum: %d\n", senderPort);
-		printf("length: %d\n", senderPort);
+		printf("sequenceNum: %d\n", sequenceNum);
+		printf("length: %d\n", length);
 	}
 
 	//	int sd = init(getHost());
@@ -19,75 +20,37 @@ int main (int argc, char ** argv){
 	assert(sd > -1);
 
 	printf("waiting in loop\n");
-	while (1) {
+	int rc = 0; 
+	msg message;
+	while (rc <=0) {
 		//use this to get the socket address
 		struct sockaddr_in y;
 		saddr= y;
-		char buffer[12];
-		int rc = UDP_Read(sd, &saddr, buffer, 5);
+		rc = UDP_Read(sd, &saddr, (char *)&message,sizeof(message) );
 
 
-		//wait for a request header
-		if (rc > 0) {
-				char buffer1[1024];
-				sprintf(buffer1, "raghavmohan");
+		//	printMessage(&message);
 
-				rc =  UDP_Write(sd, &saddr, buffer1, 1024);
-				printf("rc is %d\n", rc);
-				printf("buffer: %s\nand a happy new year", buffer);
-				printf("this is not working:%s",buffer1);
-			//handleMessage (buffer);
-			//need a message struct casted as a char []
-		}
 	}
-
-
-
-
-
-
-
-	char* inFile = "./split.txt";
-
-
-	int fd = open(inFile, O_RDONLY);
-	if (fd < 0) {
-		fprintf(stderr, "Error: Cannot open file %s\n", inFile);   
-		exit(1);
-	}
-	struct stat file_status;
-	if(stat(inFile, &file_status) != 0){
-		fprintf(stderr, "Error: Cannot stat file %s\n", inFile);
-		exit(1);
-	}
-	int fileSize = (int) file_status.st_size;
-
-	int numPackets = (int)ceil( (double)fileSize/ (double)length);
-	packet * packets = malloc ( numPackets * sizeof(packet));
-
+	int numPackets=0;
+	msg * packetsToSend = processMessage(&message, &numPackets);
 	if(DEBUG){
+		for(i = 0; i < numPackets; ++i)	
+			printMessage(&packetsToSend[i]);
 		printf("numPackets: %d\n", numPackets);
-		printf("filesize: %d\n", fileSize);
 	}
-
-	int counter =0;
-	char r ='\0';
-	//int rc = UDP_Read(sd, &
-	while (1) {	
-		int rc;
-		rc = read(fd, &r, 1);
-		if (rc == 0) // 0 indicates EOF
-			break;
-		if (rc < 0) {
-			perror("read");
-			exit(1);
-		}
-		printf("%c", r);
-		counter++;
+	for (i= 0; i < numPackets; ++i){
+		rc =  UDP_Write(sd, &saddr,(char*) &(packetsToSend[i]), sizeof(message));
+		sleep(1);
 	}
-
-
-
-
+	/*
+	   message.type='D';
+	   message.sequence=sequenceNum;
+	   message.length=length;
+	   memcpy(message.payload, "testing sender to requester", strlen("testing sender to requester"));
+	   rc =  UDP_Write(sd, &saddr,(char*) &message, sizeof(message));
+	   printf("rc is %d\n", rc);
+	   exit(0);
+	   */
 	return 0;
 }

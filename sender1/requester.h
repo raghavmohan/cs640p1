@@ -16,6 +16,12 @@ typedef struct track_t{
 	int port;
 }tracker;
 
+typedef struct packArgs{
+	char * hostname;
+	int port;
+}packArgs;
+
+
 void getoptions (int argc, char **argv);
 
 char * getHost(){
@@ -30,14 +36,15 @@ void usage(int terminate){
 	if(terminate)
 		exit(0);
 }
-typedef struct msg_t{
-	char buffer[4096];
-}msg_t;
 
+struct sockaddr_in saddr;
+int sd;
 int port;
-char* fileOpt;
-static struct sockaddr_in saddr;
-//int sd;
+struct timeval tv;
+int retval;
+fd_set rfds;
+char * fileOpt;
+
 void getoptions (int argc, char **argv) {
 	int c;
 	while ((c = getopt (argc, argv, "v?hRs:O:o:P:p:")) != -1){
@@ -49,8 +56,7 @@ void getoptions (int argc, char **argv) {
 				port =atoi(optarg);
 				break;
 			case 'o':
-				fileOpt = malloc(MAXLINESIZE);
-				sprintf(fileOpt,  optarg);
+				fileOpt = strdup(optarg);
 				break;
 			default:
 				break;
@@ -89,15 +95,102 @@ int getNumChunks(tracker * tracks, char * fileOpt, int trackLen){
 	}
 	return numChunks;
 }
-
-char * getIDHost(tracker * tracks, char * fileOpt,int id, int trackLen){
+packArgs getIDParams(tracker * tracks, char * fileOpt,int id, int trackLen){
 	int i = 0;
+	packArgs args;
 	for(i; i < trackLen; ++i){
-		if((strcmp(tracks[i].file, fileOpt) == 0) && (tracks[i].id == id))
-			return tracks[i].mac;
+		if((strcmp(tracks[i].file, fileOpt) == 0) && (tracks[i].id == id)){
+			args.hostname = tracks[i].mac;
+			args.port = tracks[i].port;
+		}
 	}
-	return '\0';
+	return args;
 }
 
+
+
+
+
+int buildTracker(tracker * tracks, FILE * trackFp){
+	char linebuf[MAXLINESIZE];	
+	int i =0, counter =0;
+	while(fgets(&linebuf, MAXLINESIZE, trackFp) > 0){
+		char * pch;
+		printf ("Splitting string \"%s\" into tokens:\n",linebuf);
+		pch = strtok (linebuf," \n");
+		counter = 0;
+		while (pch != NULL)
+		{
+			switch(counter){
+				case 0:
+					tracks[i].file = strdup(pch);	
+					break;
+				case 1:
+					tracks[i].id= atoi(pch);	
+					break;
+				case 2:
+					tracks[i].mac = strdup(pch);	
+					break;
+				case 3:
+					tracks[i].port = atoi(pch);
+					break;
+				default:
+					break;
+			}
+			++counter;
+			//			printf ("%s",pch);
+			pch = strtok (NULL, " \n");
+		}
+		++i;
+	}
+
+	return 1;
+}
+
+int compare(const void *p1, const void *p2)
+{
+	const tracker *elem1 = p1;    
+	const tracker *elem2 = p2;
+	//take care of interesting case first
+
+	if( strcmp(elem1->file, elem2->file) == 0){
+		if(elem1->id > elem2->id)
+			return 1;
+		else if(elem1->id < elem2->id)
+			return -1;
+		else
+			return 0;
+	}
+	else{
+		return ( strcmp(elem1->file, elem2->file));
+	}
+}
+//This get from the TRACKER txt
+int  getPackets(char * hostname, int portIn){
+	sd = UDP_Open(-1);
+	assert(sd > -1);
+
+
+	//This is the SERVER PORT!!!
+	int rc = UDP_FillSockAddr(&saddr, hostname, portIn);
+	assert(rc == 0);
+
+	msg message;
+
+	retval = 0;
+	message.type ='R';
+	message.sequence =0;
+	message.length=0;
+	memcpy(message.payload, fileOpt, strlen(fileOpt)+1);
+	rc = UDP_Write(sd, &saddr,(char *) &message, sizeof(message));
+	while(1){
+		struct sockaddr_in raddr;
+		rc = UDP_Read(sd, &raddr,(char *) &(message), sizeof(message)); 
+		if(rc>0){
+			printMessage(&message);
+		}
+	}
+	return 1;
+}
 
 

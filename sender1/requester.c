@@ -1,3 +1,52 @@
+#include "requester.h"
+int main (int argc, char ** argv){
+	if(argc != 5)
+		usage(1);
+
+	getoptions(argc, argv);
+
+	if(DEBUG){
+		printf("port: %d\n", port);
+		printf("fileOpt: %s\n", fileOpt);
+	}
+
+	int fd, bytesRead, fileSize, counter, i;
+
+	char* inFile = "./tracker.txt";
+
+
+	FILE * trackFp =fopen(inFile, "r");
+	if(trackFp == NULL)	
+		errorExit("bad Tracker");
+
+	int numlines = numLines(inFile);
+	if(DEBUG)
+		printf("Numlines:%d\n", numlines);
+
+	tracker * tracks = malloc ( numlines * sizeof(tracker));
+	buildTracker(tracks, trackFp);
+	//sort the tracks to make easier for later. Look @ compare to see sort order
+	qsort (tracks, numlines, sizeof(tracks[0]), compare);
+	if(DEBUG){
+		for(i =0; i < numlines ; ++i)
+			printTrack(tracks[i]);
+	}
+
+	//now we have all information in memory
+	int numChunks = getNumChunks(tracks, fileOpt, numlines);
+	printf("numChunks:%d\n", numChunks);
+	for(i=1; i <= numChunks; ++i){
+		packArgs argsP = getIDParams(tracks, fileOpt, i, numlines);
+		if(DEBUG > 1)
+			printf("host:%s, port:%d\n", argsP.hostname, argsP.port);
+
+		getPackets(argsP.hostname, argsP.port);
+	}
+
+	return 0;
+}
+
+/*
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -15,6 +64,12 @@ typedef struct track_t{
 	char*  mac;
 	int port;
 }tracker;
+
+typedef struct packArgs{
+	char * hostname;
+	int port;
+}packArgs;
+
 
 void getoptions (int argc, char **argv);
 
@@ -38,9 +93,6 @@ struct timeval tv;
 int retval;
 fd_set rfds;
 char * fileOpt;
-typedef struct msg_t{
-	char buffer[1024];
-}msg;
 
 void getoptions (int argc, char **argv) {
 	int c;
@@ -92,14 +144,16 @@ int getNumChunks(tracker * tracks, char * fileOpt, int trackLen){
 	}
 	return numChunks;
 }
-
-char * getIDHost(tracker * tracks, char * fileOpt,int id, int trackLen){
+packArgs getIDParams(tracker * tracks, char * fileOpt,int id, int trackLen){
 	int i = 0;
+	packArgs args;
 	for(i; i < trackLen; ++i){
-		if((strcmp(tracks[i].file, fileOpt) == 0) && (tracks[i].id == id))
-			return tracks[i].mac;
+		if((strcmp(tracks[i].file, fileOpt) == 0) && (tracks[i].id == id)){
+			args.hostname = tracks[i].mac;
+			args.port = tracks[i].port;
+		}
 	}
-	return '\0';
+	return args;
 }
 
 
@@ -141,129 +195,47 @@ int buildTracker(tracker * tracks, FILE * trackFp){
 
 	return 1;
 }
-int main (int argc, char ** argv){
-	if(argc != 5)
-		usage(1);
 
-	getoptions(argc, argv);
+int compare(const void *p1, const void *p2)
+{
+	const tracker *elem1 = p1;    
+	const tracker *elem2 = p2;
+	//take care of interesting case first
 
-	if(DEBUG){
-		printf("port: %d\n", port);
-		printf("fileOpt: %s\n", fileOpt);
+	if( strcmp(elem1->file, elem2->file) == 0){
+		if(elem1->id > elem2->id)
+			return 1;
+		else if(elem1->id < elem2->id)
+			return -1;
+		else
+			return 0;
 	}
-
-	int fd, bytesRead, fileSize, counter, i;
-
-	char* inFile = "./tracker.txt";
-
-
-	FILE * trackFp =fopen(inFile, "r");
-	if(trackFp == NULL)	
-		errorExit("bad Tracker");
-
-	int numlines = numLines(inFile);
-	if(DEBUG)
-		printf("Numlines:%d\n", numlines);
-
-	tracker * tracks = malloc ( numlines * sizeof(tracker));
-	buildTracker(tracks, trackFp);
-
-	if(DEBUG){
-		for(i =0; i < numlines ; ++i)
-			printTrack(tracks[i]);
+	else{
+		return ( strcmp(elem1->file, elem2->file));
 	}
-
-	//now we have all information in memory
-
-	int numChunks = getNumChunks(tracks, fileOpt, numlines);
-	printf("numChunks:%d\n", numChunks);
-	for(i=1; i <= numChunks; ++i){
-		printf("host:%s\n", getIDHost(tracks, fileOpt,i, numlines));
-	}
-
-
-
-	//exit(0);
-	//Get this from the arguments
-	//This is the client port aka the requester port
+}
+//This get from the TRACKER txt
+int  getPackets(char * hostname, int portIn){
 	sd = UDP_Open(-1);
 	assert(sd > -1);
 
-	//This get from the TRACKER txt
-	char *hostname = "mumble-18.cs.wisc.edu";
-	
+
 	//This is the SERVER PORT!!!
-	int rc = UDP_FillSockAddr(&saddr, hostname, port);
+	int rc = UDP_FillSockAddr(&saddr, hostname, portIn);
 	assert(rc == 0);
 
 
 	msg message;
 	retval = 0;
-	while(retval == 0){
-		rc = UDP_Write(sd, &saddr,(char *) &message, sizeof(message));
-		FD_ZERO(&rfds);
-		FD_SET(sd, &rfds);
-
-		tv.tv_sec = 5;
-		tv.tv_usec = 0;
-		retval = select(sd + 1, &rfds, NULL, NULL, &tv);
-
-		if(retval){
-			if (rc > 0) {
-				struct sockaddr_in raddr;
-				rc = UDP_Read(sd, &raddr,(char *) &message, sizeof(message)); 
-			}
-		}
-	}
-	printf("message.buffer: %s\n", message.buffer);
-
-/*
-	char buffer[1024];
-	sprintf(buffer, "thisisatest");
-
-	printf("%d\n", htons(saddr.sin_port));
-	char ip_str[INET_ADDRSTRLEN];
-	inet_ntop(AF_INET, &(saddr.sin_addr), ip_str, INET_ADDRSTRLEN);
-	printf("%s\n",ip_str);
-	rc =  UDP_Write(sd1, &saddr, buffer, 1024);
-	if(rc < 0){
-		fprintf(stderr, "Write failed");
-		exit(1);
-	}
+	sprintf(message.buffer, "testing requester to sender");
+	rc = UDP_Write(sd, &saddr,(char *) &message, sizeof(message));
 	while(1){
-	struct sockaddr_in raddr;
-	rc = UDP_Read(sd1, &raddr, buffer, 1024);
-	if(rc > 0)
-		printf(buffer);
+		struct sockaddr_in raddr;
+		rc = UDP_Read(sd, &raddr,(char *) &message, sizeof(message)); 
+		if(rc>0)
+			printf("message.buffer: %s\n", message.buffer);
 	}
-*/
-	/*
-	   printf("waiting in loop\n");
-	   while (1) {
-//use this to get the socket address
-struct sockaddr_in y;
-saddr = y;
-char buffer[sizeof(msg_t)];
-int rc = UDP_Read(sd, &saddr, buffer, sizeof(msg_t));
-
-//figure out what kind of message this is - read, write, lookup etc
-//when done go ahead and reply to it
-
-if (rc > 0) {
-// char reply[BUFFER_SIZE];
-//sprintf(reply, "reply");
-
-printf("Printing buffer\n");
-int i = 0;
-for(i; i < sizeof(buffer); ++i)
-printf("%c", buffer[i]);
-printf("\n");
-//	handleMessage (buffer);
-//need a message struct casted as a char []
-rc =  UDP_Write(sd, &saddr, buffer, sizeof(msg_t));
-}
+	return 1;
 }
 */
-return 0;
-}
 

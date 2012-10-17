@@ -5,13 +5,6 @@
 #define DEBUG 1
 
 //TODO: Check the length of the types...
-typedef struct packet_t{
-	char type;
-	uint sequence;
-	size_t length;
-	char * payload;
-} packet;
-
 void getoptions (int argc, char **argv);
 
 //define globals
@@ -91,21 +84,51 @@ char * getHost(){
 	return strdup(hostname);
 }
 
+//routine that takes in a request packet
+//processes and returns an array of packets to send
+msg *  processMessage(msg * message, int * numP){
+	int numPackets;
+	msg * packets;
+	if(message->type == 'R'){
+		char * inFile = message->payload;
+		printf("infile: %s\n", inFile);
+		FILE * dataFile =fopen(inFile, "r");
+		if(dataFile == NULL)
+			return NULL;	
 
-int DFS_Write(packet * packetToWrite){
-	int rc;
-	int retval = 0;
+		struct stat file_status;
+		if(stat(inFile, &file_status) != 0){
+			fprintf(stderr, "Error: Cannot stat file %s\n", inFile);
+			exit(1);
+		}
+		int fileSize = (int) file_status.st_size;
 
-	int sd = -1;
+		 numPackets = (int)ceil( (double)fileSize/ (double)length);
+		packets = malloc ( numPackets * sizeof(msg));
 
-	while(retval == 0){
-		rc = UDP_Write(sd, &saddr,(char *) packetToWrite, sizeof(packet));
-		if (rc > 0){
-			struct sockaddr_in raddr;
-			rc = UDP_Read(sd, &raddr,(char *) packetToWrite, sizeof(packet)); 
+		if(DEBUG){
+			printf("numPackets: %d\n", numPackets);
+			printf("filesize: %d\n", fileSize);
+		}
+		int i, j;
+		for(i = 0; i < numPackets; ++i){
+			packets[i].type='D';
+			packets[i].length=length;
+			//TODO : need to figure this out
+			packets[i].sequence=i;
+			for(j=0; j < length; ++j){
+				char ch = getc(dataFile);
+				if(ch != EOF)
+					packets[i].payload[j] = ch;
+			}	 
+		}
+
+		if(DEBUG){
+			for(i = 0; i < numPackets; ++i)	
+				printMessage(&packets[i]);
 		}
 	}
-
-	return 0;
-	//return message.returnVal;
+	*numP = numPackets;
+	return packets;
 }
+
