@@ -37,21 +37,25 @@ int main (int argc, char ** argv){
 		printf("numPackets: %d\n", numPackets);
 	}
 	for (i= 0; i < numPackets; ++i){
-		
-	printIP(&saddr);
+
+		printIP(&saddr);
 		rc =  UDP_Write(sd, &saddr,(char*) &(packetsToSend[i]), sizeof(message));
-		
-	struct timeval endTotal;
+
+		struct timeval endTotal;
 		gettimeofday(&endTotal, NULL);
 		time_t curtime;
 		curtime=endTotal.tv_sec;
 		char timeBuf[32];
 		strftime(timeBuf,30,"%m-%d-%Y  %T.",localtime(&curtime));
-	printf("Time sent:%s\n", timeBuf);
-	
-//usleep( (1000/rate) );
+		printf("\tTime sent:%s\n", timeBuf);
+		int j =0;
+		printf("%s\n", "Printing first 4 bytes of Payload");
+		for(j; j < 4; ++j)
+			printf("\t%c", packetsToSend[i].payload[j]);
+		printf("%s", "\n");
+
 		usleep( (SEC_MILLSEC/rate) );
 	}
-	
-return 0;
+
+	return 0;
 }
